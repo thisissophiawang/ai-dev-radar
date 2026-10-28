@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from .services.catalog import Catalog, CatalogQuery
 from .storage import Store
 from .refresh import Collector, next_due, ZONE
 
@@ -16,8 +17,16 @@ class Note(BaseModel):
     note: str=Field(default='',max_length=5000)
 
 
+class Verification(BaseModel):
+    stage: Literal['docs_checked','local_passed','adopted']
+    version: str=Field(min_length=1,max_length=200)
+    evidence: str=Field(min_length=1,max_length=5000)
+    scope: str=Field(min_length=1,max_length=2000)
+
+
 def create_app(db_path=None,auto=True):
     store=Store(db_path or os.getenv('RADAR_DB','data/radar.sqlite3'))
+    catalog=Catalog(store)
     worker=Collector(store)
     @asynccontextmanager
     async def lifespan(app):
@@ -51,8 +60,8 @@ def create_app(db_path=None,auto=True):
     @app.get('/api/health')
     def health(): return {'status':'ok'}
     @app.get('/api/items')
-    def items(kind: Literal['article','repo']|None=None,q: str=Query('',max_length=200),bookmarked: bool=False,sort: Literal['recent','stars']='recent',limit: int=Query(40,ge=1,le=100),offset: int=Query(0,ge=0)):
-        return {'items':store.items(kind,q,bookmarked,sort,limit,offset)}
+    def items(kind: Literal['article','repo']|None=None,q: str=Query('',max_length=200),bookmarked: bool=False,sort: Literal['recent','stars']='recent',limit: int=Query(40,ge=1,le=100),offset: int=Query(0,ge=0),stage: Literal['discovered','docs_checked','local_passed','adopted']|None=None):
+        return catalog.search(CatalogQuery(kind=kind,q=q,bookmarked=bookmarked,sort=sort,limit=limit,offset=offset,stage=stage))
     @app.get('/api/status')
     def status(): return {'counts':store.stats(),'run':store.run(),'next_run':next_due(datetime.now(ZONE)),'auto':auto}
     @app.post('/api/refresh',status_code=202)
@@ -70,6 +79,15 @@ def create_app(db_path=None,auto=True):
     def remove(key: str):
         store.unbookmark(key)
         return Response(status_code=204)
+    @app.put('/api/verifications/{key}')
+    def verify(key: str,entry: Verification):
+        try: return store.verify(key,**entry.model_dump())
+        except KeyError: raise HTTPException(404,'项目不存在')
+        except ValueError as exc: raise HTTPException(422,str(exc))
+    @app.get('/api/verifications/{key}')
+    def history(key: str):
+        try: return store.verifications(key)
+        except KeyError: raise HTTPException(404,'项目不存在')
     return app
 
 app=create_app()

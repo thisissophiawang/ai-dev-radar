@@ -1,0 +1,10 @@
+{
+  "repo": "modelcontextprotocol/python-sdk",
+  "stage": "docs_checked",
+  "checked_at": "2026-10-28T06:29:13.364984+00:00",
+  "commit": "d7845c073a2b9ba5ab2817ecf93d3e45ef24cd14",
+  "readme_sha256": "51552fa66eee9852eb40f5bad68319df90800e88c399c4f404562c570216c05b",
+  "evidence": "https://github.com/modelcontextprotocol/python-sdk/blob/d7845c073a2b9ba5ab2817ecf93d3e45ef24cd14/README.md",
+  "scope": "适用于后续把采集查询暴露给AI助手。README说明Python 3.11+，MCPServer/Client及stdio/HTTP示例；当前dashboard尚未接入MCP，未验证SDK运行或业务适配。",
+  "executed": false
+}

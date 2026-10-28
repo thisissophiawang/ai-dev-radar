@@ -1,0 +1,10 @@
+{
+  "repo": "jnMetaCode/superpowers-zh",
+  "stage": "docs_checked",
+  "checked_at": "2026-10-28T06:29:07.149254+00:00",
+  "commit": "020339d1410e51a9eca16d26f4eac4cfee166d8a",
+  "readme_sha256": "3e1e2bbd475f3b179965942a4e7dde601f3cd75c890fd9ad987211e8c46ec872",
+  "evidence": "https://github.com/jnMetaCode/superpowers-zh/blob/020339d1410e51a9eca16d26f4eac4cfee166d8a/README.md",
+  "scope": "适用于本项目的需求、计划、测试与审查流程。已核对README的项目级/用户级安装和21个技能说明；本记录仅证明文档核查，不证明所有附带脚本可用。",
+  "executed": false
+}

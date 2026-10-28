@@ -1,0 +1,10 @@
+{
+  "repo": "github/spec-kit",
+  "stage": "docs_checked",
+  "checked_at": "2026-10-28T06:29:09.752682+00:00",
+  "commit": "222a973f8b8794366680c043fb935a31f71902af",
+  "readme_sha256": "3baa99368443f26244b3a021b40eaf6f167ee591f5759c91315ad50d0a204592",
+  "evidence": "https://github.com/github/spec-kit/blob/222a973f8b8794366680c043fb935a31f71902af/README.md",
+  "scope": "适用于需求规格到任务拆解。README要求Python 3.11+与uv，提供specify/init及规格流程；与现有Superpowers存在功能重叠，暂不额外安装，未实测CLI。",
+  "executed": false
+}

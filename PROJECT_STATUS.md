@@ -50,3 +50,24 @@ Open http://127.0.0.1:8000 . Keep the process running and the computer awake for
 ## Next action
 
 Finish authenticated source validation, then connect one domestic model to turn collected evidence into sourced Chinese answers. Preserve collection functions as reusable tools for that future assistant.
+
+## Project verification update — 2026-10-28
+
+Implemented on `codex/project-verification`:
+- Repository cards now distinguish collection time, upstream push time, and human review time.
+- Four evidence stages: discovered, documentation checked, locally passed, adopted.
+- Repository-only filtering and evidence history dialog with version, scope, and timestamp.
+- Explicit manual records, not automated certifications. Missing evidence and skipped progression are rejected; records survive collector refresh and application restart.
+- Upstream push-time changes flag old evidence for re-review without erasing history.
+- Three prioritized projects have pinned-commit documentation reviews: superpowers-zh, spec-kit, python-sdk. None is newly claimed as locally passed or adopted by these review records.
+- Review reports: `docs/verifications/`. The manual review import uses authenticated GitHub CLI separately from scheduled collection.
+- Validation: 11 backend tests passed; browser filtering, evidence history, timestamps, and mobile layout passed. Existing Starlette/httpx warning remains.
+
+## Read-only MCP increment — October 28, 2026
+
+- Added shared validated catalog queries for HTTP and MCP.
+- Added five stdio read tools using the official MCP Python SDK 1.30.0 (v1 compatibility line).
+- Verified real subprocess/client initialization, tool discovery, search, exact item follow-up, evidence history, source listing, partial-run status, missing items and invalid limits.
+- Full local suite: 12 passed; one existing Starlette/httpx deprecation warning.
+- This is local protocol validation with fixture data, not real model/QwenPaw acceptance.
+- Remaining: controlled writes and idempotency, business Skills, assistant integration and domestic model configuration.

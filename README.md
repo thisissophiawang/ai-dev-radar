@@ -109,6 +109,16 @@ Planned additions include sourced conversational answers, Chinese technical expl
 
 Superpowers provides development skills; the runtime collector is ordinary application code and does not depend on an AI model.
 
+## Freshness and project verification
+
+Repository cards distinguish upstream push time, last collection time, and review time. Filter projects by **discovered**, **documentation checked**, **locally passed**, or **adopted**. The evidence dialog records a version/commit, evidence, scope, and timestamp; records are retained separately from automatic metadata refreshes. Later upstream changes mark the previous verification as needing review.
+
+These are human-maintained evidence records, not automatic quality certificates. Stage progression requires the preceding stage. Three initial documentation reviews are recorded in [docs/verifications](docs/verifications); they do not imply successful local execution or production adoption. The manual `scripts/review_seed_projects.py` importer requires a separately authenticated `gh` CLI and should only be run after actually reviewing the named sources.
+
 ## MCP and Skills design
 
 See the [MCP Tools and Skills Architecture](docs/architecture/mcp-skills-design.md) for the proposed shared-service architecture, nine MCP tools, four business Skills, evidence stages, write safeguards, and phased acceptance plan. This is a design proposal; the MCP server and domestic-model assistant are not implemented yet.
+
+### Read-only MCP integration
+
+A local stdio MCP server now exposes five read tools over the same database as the dashboard: search, exact item details, verification history, configured sources, and collection status. See [local setup](docs/mcp-local-setup.md). Real SDK client tests cover protocol initialization and tool calls; QwenPaw and domestic-model conversations remain pending.

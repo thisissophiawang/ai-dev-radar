@@ -32,6 +32,7 @@ class Store:
             CREATE TABLE IF NOT EXISTS item_sources(item_id TEXT,source TEXT,PRIMARY KEY(item_id,source));
             CREATE TABLE IF NOT EXISTS bookmarks(item_id TEXT PRIMARY KEY REFERENCES items(id),note TEXT,updated_at TEXT);
             CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY,state TEXT,started_at TEXT,finished_at TEXT,results TEXT);
+            CREATE TABLE IF NOT EXISTS verifications(seq INTEGER PRIMARY KEY AUTOINCREMENT,item_id TEXT REFERENCES items(id),stage TEXT,version TEXT,evidence TEXT,scope TEXT,checked_at TEXT,observed_push TEXT);
             CREATE TABLE IF NOT EXISTS snapshots(item_id TEXT,day TEXT,stars INTEGER,PRIMARY KEY(item_id,day));
             ''')
 
@@ -60,12 +61,15 @@ class Store:
                 c.execute('INSERT INTO snapshots VALUES(?,?,?) ON CONFLICT(item_id,day) DO UPDATE SET stars=excluded.stars',(key,day,meta.get('stars',0)))
         return key
 
-    def items(self, kind=None, q='', bookmarked=False, sort='recent', limit=100, offset=0):
+    def items(self, kind=None, q='', bookmarked=False, sort='recent', limit=100, offset=0, stage=None, item_id=None):
         sql = 'SELECT i.*,b.note,b.item_id IS NOT NULL AS bookmarked FROM items i LEFT JOIN bookmarks b ON b.item_id=i.id WHERE 1=1'
         args=[]
+        if item_id is not None: sql+=' AND i.id=?'; args.append(item_id)
         if kind: sql+=' AND kind=?'; args.append(kind)
         if q: sql+=" AND (title LIKE ? OR excerpt LIKE ?)"; args.extend(['%'+q+'%']*2)
         if bookmarked: sql+=' AND b.item_id IS NOT NULL'
+        if stage:
+            sql+=" AND kind='repo' AND COALESCE((SELECT stage FROM verifications v WHERE v.item_id=i.id ORDER BY seq DESC LIMIT 1),'discovered')=?"; args.append(stage)
         if sort=='stars': sql+=" ORDER BY CAST(json_extract(metadata,'$.stars') AS INTEGER) DESC,i.id"
         else: sql+=' ORDER BY published_at IS NULL,published_at DESC,i.id'
         sql+=' LIMIT ? OFFSET ?'; args.extend([limit,offset])
@@ -73,6 +77,9 @@ class Store:
             rows=[dict(r) for r in c.execute(sql,args)]
             for row in rows:
                 row['metadata']=json.loads(row['metadata'])
+                v=c.execute('SELECT * FROM verifications WHERE item_id=? ORDER BY seq DESC LIMIT 1',(row['id'],)).fetchone()
+                row['verification']=dict(v) if v else {'stage':'discovered','checked_at':None}
+                row['verification']['stale']=bool(v and v['observed_push']!=row['metadata'].get('pushed_at'))
                 row['sources']=[r[0] for r in c.execute('SELECT source FROM item_sources WHERE item_id=?',(row['id'],))]
         return rows
 
@@ -107,3 +114,23 @@ class Store:
             counts={r[0]:r[1] for r in c.execute('SELECT kind,count(*) FROM items GROUP BY kind')}
             counts['bookmarks']=c.execute('SELECT count(*) FROM bookmarks').fetchone()[0]
         return counts
+
+    def verify(self,key,stage,version,evidence,scope):
+        stages=['discovered','docs_checked','local_passed','adopted']
+        if stage not in stages[1:] or not all(v.strip() for v in (version,evidence,scope)):
+            raise ValueError('必须填写版本、证据和验证范围')
+        with self.db() as c:
+            item=c.execute('SELECT * FROM items WHERE id=?',(key,)).fetchone()
+            if not item: raise KeyError(key)
+            if item['kind']!='repo': raise ValueError('只有项目支持验证状态')
+            latest=c.execute('SELECT stage FROM verifications WHERE item_id=? ORDER BY seq DESC LIMIT 1',(key,)).fetchone()
+            current=latest[0] if latest else 'discovered'
+            if stages.index(stage)>stages.index(current)+1: raise ValueError('请先完成前一阶段验证')
+            c.execute('INSERT INTO verifications(item_id,stage,version,evidence,scope,checked_at,observed_push) VALUES(?,?,?,?,?,?,?)',
+                      (key,stage,version.strip(),evidence.strip(),scope.strip(),stamp(),json.loads(item['metadata']).get('pushed_at')))
+            return dict(c.execute('SELECT * FROM verifications WHERE seq=last_insert_rowid()').fetchone())
+
+    def verifications(self,key):
+        with self.db() as c:
+            if not c.execute('SELECT 1 FROM items WHERE id=?',(key,)).fetchone(): raise KeyError(key)
+            return [dict(r) for r in c.execute('SELECT * FROM verifications WHERE item_id=? ORDER BY seq DESC',(key,))]
