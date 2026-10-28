@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from .services.catalog import Catalog, CatalogQuery
+from .services.bookmarks import Bookmarks
 from .storage import Store
 from .refresh import Collector, next_due, ZONE
 
@@ -27,6 +28,7 @@ class Verification(BaseModel):
 def create_app(db_path=None,auto=True):
     store=Store(db_path or os.getenv('RADAR_DB','data/radar.sqlite3'))
     catalog=Catalog(store)
+    bookmarks=Bookmarks(store)
     worker=Collector(store)
     @asynccontextmanager
     async def lifespan(app):
@@ -73,11 +75,13 @@ def create_app(db_path=None,auto=True):
         return data
     @app.put('/api/bookmarks/{key}')
     def bookmark(key: str,note: Note):
-        try: return store.bookmark(key,note.note)
-        except KeyError: raise HTTPException(404,'内容不存在')
+        try: return bookmarks.save(key,note.note)['bookmark']
+        except ValueError: raise HTTPException(404,'内容不存在')
     @app.delete('/api/bookmarks/{key}',status_code=204)
     def remove(key: str):
-        store.unbookmark(key)
+        try: bookmarks.remove(key)
+        except ValueError as exc:
+            if not str(exc).startswith('NOT_FOUND:'): raise
         return Response(status_code=204)
     @app.put('/api/verifications/{key}')
     def verify(key: str,entry: Verification):

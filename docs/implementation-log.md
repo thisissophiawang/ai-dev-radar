@@ -24,3 +24,9 @@ Implementation: shared Catalog/CatalogQuery, exact ID filtering, five read tools
 Integration finding: bare dict annotations did not generate structuredContent; inspecting installed SDK output-schema handling identified the cause. Typed dict[str, Any] fixed the contract.
 GREEN: full suite 12 passed, one existing Starlette/httpx deprecation warning.
 Delivery: docs/mcp-local-setup.md. Model and QwenPaw integration are not yet implemented or accepted.
+
+## Bookmark operations increment
+
+RED: two storage tests failed on missing bookmark_write; after the transaction implementation they passed. Extended real stdio test failed on unknown radar_bookmark_save, then passed after tool registration.
+GREEN: full suite 14 passed, one existing deprecation warning. Transaction tests cover concurrent same-key calls, conflicting reuse, restart replay, and old deletion replay after a fresh save.
+Ruling: replay is a historical operation receipt; clients must use item_get for current state. Legacy HTTP deletion of missing IDs remains a 204 no-op. No QwenPaw/model execution is claimed.

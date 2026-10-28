@@ -117,8 +117,12 @@ These are human-maintained evidence records, not automatic quality certificates.
 
 ## MCP and Skills design
 
-See the [MCP Tools and Skills Architecture](docs/architecture/mcp-skills-design.md) for the proposed shared-service architecture, nine MCP tools, four business Skills, evidence stages, write safeguards, and phased acceptance plan. This is a design proposal; the MCP server and domestic-model assistant are not implemented yet.
+See the [MCP Tools and Skills Architecture](docs/architecture/mcp-skills-design.md) for the proposed shared-service architecture, nine MCP tools, four business Skills, evidence stages, write safeguards, and phased acceptance plan. The shared catalog service and five read-only MCP tools are implemented; the remaining mutation tools, business Skills and domestic-model assistant are planned.
 
 ### Read-only MCP integration
 
 A local stdio MCP server now exposes five read tools over the same database as the dashboard: search, exact item details, verification history, configured sources, and collection status. See [local setup](docs/mcp-local-setup.md). Real SDK client tests cover protocol initialization and tool calls; QwenPaw and domestic-model conversations remain pending.
+
+### Bookmark MCP operations
+
+The MCP server also exposes idempotent bookmark save/remove tools (seven tools total). HTTP and MCP share the bookmark service. Request replay returns the original operation result; query the item for current state. See the local setup guide for request-key semantics. The full local suite passes 14 tests; real-model assistant acceptance remains pending.

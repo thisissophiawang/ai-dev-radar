@@ -27,6 +27,7 @@ class Store:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.db() as c:
             c.executescript('''
+            CREATE TABLE IF NOT EXISTS mutation_requests(request_key TEXT PRIMARY KEY,payload TEXT NOT NULL,result TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS items(id TEXT PRIMARY KEY,url TEXT UNIQUE,title TEXT,kind TEXT,
               excerpt TEXT,published_at TEXT,fetched_at TEXT,topic TEXT,metadata TEXT);
             CREATE TABLE IF NOT EXISTS item_sources(item_id TEXT,source TEXT,PRIMARY KEY(item_id,source));
@@ -134,3 +135,24 @@ class Store:
         with self.db() as c:
             if not c.execute('SELECT 1 FROM items WHERE id=?',(key,)).fetchone(): raise KeyError(key)
             return [dict(r) for r in c.execute('SELECT * FROM verifications WHERE item_id=? ORDER BY seq DESC',(key,))]
+
+    def bookmark_write(self, operation, key, note, request_key):
+        if operation not in ('save','remove') or not request_key.strip() or len(request_key)>200 or len(note)>5000:
+            raise ValueError('INVALID_INPUT: invalid bookmark request')
+        payload=json.dumps([operation,key,note],ensure_ascii=False)
+        with self.db() as c:
+            c.execute('BEGIN IMMEDIATE')
+            old=c.execute('SELECT payload,result FROM mutation_requests WHERE request_key=?',(request_key,)).fetchone()
+            if old:
+                if old['payload']!=payload: raise ValueError('CONFLICT: request key already used with different arguments')
+                return json.loads(old['result'])
+            if not c.execute('SELECT 1 FROM items WHERE id=?',(key,)).fetchone():
+                raise ValueError('NOT_FOUND: item does not exist')
+            if operation=='save':
+                c.execute('INSERT INTO bookmarks VALUES(?,?,?) ON CONFLICT(item_id) DO UPDATE SET note=excluded.note,updated_at=excluded.updated_at',(key,note,stamp()))
+            else:
+                c.execute('DELETE FROM bookmarks WHERE item_id=?',(key,))
+            row=c.execute('SELECT * FROM bookmarks WHERE item_id=?',(key,)).fetchone()
+            result={'item_id':key,'bookmarked':row is not None,'bookmark':dict(row) if row else None,'request_key':request_key}
+            c.execute('INSERT INTO mutation_requests VALUES(?,?,?)',(request_key,payload,json.dumps(result)))
+            return result

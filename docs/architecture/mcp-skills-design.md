@@ -1,6 +1,6 @@
 # MCP Tools and Skills Architecture
 
-Status: **Design proposal, not implemented**. Updated: October 28, 2026.
+Status: **Partially implemented: shared catalog queries, five read-only MCP tools and two bookmark write tools; remaining tools and Skills are proposed**. Updated: October 28, 2026.
 
 ## Product goal
 
@@ -92,7 +92,7 @@ Each Skill specifies triggers, prerequisites, tool sequence, decision rules, fai
 | Skill | Example request | Workflow |
 | --- | --- | --- |
 | `daily-ai-brief` | What matters today? | Inspect source freshness; collect if necessary; inspect job outcomes; search relevant items; summarize independent events with links and coverage limits |
-| `discover-dev-projects` | Find projects for CRM MCP development | Search candidates; inspect metadata and evidence; compare fit; distinguish popularity, author claims, documentation review, and executed tests |
+| `discover-dev-projects` | Find AI coding tools worth trying for my personal development workflow | Search candidates; inspect metadata and evidence; compare fit; distinguish popularity, author claims, documentation review, and executed tests |
 | `review-project-evidence` | Is this project usable? | Read version and history; inspect official material using available authorized retrieval tools; identify knowns and unknowns; register evidence only when justified and authorized |
 | `manage-dev-library` | Save this project and its potential use | Resolve the exact item; save bookmark/note; read back and report the persisted result |
 
@@ -138,4 +138,4 @@ First delivery target: phases 1–4. Phase 5 depends on the selected model/provi
 
 ## Current implementation boundary
 
-The repository already contains a local collection dashboard and HTTP/SQLite business code. Project verification UI work is being developed separately. This document does **not** claim that an MCP server, the proposed business Skills, idempotency journal, or domestic-model assistant exists yet.
+The repository contains the collection dashboard, evidence-tracking UI, shared catalog queries and five stdio read-only MCP tools, validated with an actual SDK client. Bookmark save/remove tools and their transactional idempotency journal are also implemented. Collection-start and verification-write MCP tools, business Skills and the domestic-model assistant remain unimplemented. See PROJECT_STATUS.md for current delivery evidence.

@@ -1,9 +1,10 @@
-"""Read-only MCP adapter. Never starts collection or recovers active jobs."""
+"""MCP catalog and bookmark adapter. Never starts collection or recovers active jobs."""
 import os
 from typing import Annotated, Literal, Any
 from pydantic import Field
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
+from .services.bookmarks import Bookmarks
 from .storage import Store
 from .collectors import SOURCES
 from .services.catalog import Catalog, CatalogQuery
@@ -12,6 +13,7 @@ from .services.catalog import Catalog, CatalogQuery
 def create_server(db_path):
     store = Store(db_path)
     catalog = Catalog(store)
+    bookmarks = Bookmarks(store)
     server = FastMCP('AI Dev Radar')
     readonly = ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False)
 
@@ -50,6 +52,16 @@ def create_server(db_path):
         if run is None:
             raise ValueError('NOT_FOUND: collection run does not exist')
         return {'run': run}
+
+    @server.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False))
+    def radar_bookmark_save(item_id: Annotated[str, Field(min_length=1,max_length=100)], request_key: Annotated[str, Field(min_length=1,max_length=200)], note: Annotated[str, Field(max_length=5000)] = '') -> dict[str, Any]:
+        """Save a bookmark only when requested by the user. Reuse request_key for retries of the same operation; use a new key for new intent. Returns original persisted result on replay, not necessarily current state; use item_get for current read-back."""
+        return bookmarks.save(item_id,note,request_key)
+
+    @server.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False))
+    def radar_bookmark_remove(item_id: Annotated[str, Field(min_length=1,max_length=100)], request_key: Annotated[str, Field(min_length=1,max_length=200)]) -> dict[str, Any]:
+        """Remove a bookmark when explicitly requested. Reuse the key on retry; replay returns the original outcome without deleting a later re-save. Use item_get to inspect current state."""
+        return bookmarks.remove(item_id,request_key)
 
     return server
 
