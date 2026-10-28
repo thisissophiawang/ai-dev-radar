@@ -2,6 +2,55 @@
 
 A local-first dashboard that collects AI engineering news and GitHub projects for MCP, agent skills, and AI coding. Built with Python, FastAPI, SQLite, and a buildless browser UI.
 
+## Current capabilities
+
+- Browse collected AI news, discover open-source projects, and keep a personal reference library.
+- Search titles and descriptions; sort repositories by recent activity or GitHub stars.
+- Save bookmarks with notes, edit them, and remove them through the local dashboard.
+- Collect automatically on first startup and daily while the service runs; trigger manual refreshes when needed.
+- Inspect per-source results, partial failures, and collection timestamps without losing existing content.
+
+The collection workflow developed on `codex/dashboard-collection` is now integrated into `main`.
+
+## How collection works
+
+```text
+Startup / daily schedule / manual refresh
+                   |
+                   v
+        Single active collection run
+                   |
+                   v
+     RSS feeds + GitHub REST endpoints
+                   |
+                   v
+ Normalize URLs and source metadata
+                   |
+                   v
+  SQLite upsert + daily star snapshots
+                   |
+                   v
+  Dashboard -> source links -> bookmarks
+```
+
+1. **Trigger:** the scheduler checks once per minute for the daily 09:00 Asia/Shanghai cutoff. Concurrent refresh requests reuse the active run.
+2. **Collect:** approved HTTPS sources are fetched with bounded response sizes and request timeouts. GitHub searches discover candidates alongside the configured seed repositories.
+3. **Normalize:** tracking parameters are removed, business query parameters are retained, and canonical URLs identify records. Unknown publication dates remain unknown.
+4. **Persist:** repeated items update existing rows; source attribution and daily repository star snapshots are saved separately. Bookmarks remain attached to stable item IDs.
+5. **Report:** successful sources retain their results even when another source fails. A run ends as successful, partial, or failed; abandoned runs are marked interrupted on restart.
+6. **Read and save:** the browser queries the local API, renders external content as text, and persists bookmarks and notes in SQLite.
+
+## Architecture
+
+| Component | Responsibility |
+| --- | --- |
+| `src/radar/app.py` | Local HTTP API, lifecycle, static page serving, and origin checks |
+| `src/radar/collectors.py` | RSS parsing, GitHub discovery, and bounded source requests |
+| `src/radar/refresh.py` | Collection orchestration, single-run coordination, and daily scheduling |
+| `src/radar/storage.py` | SQLite records, canonical URLs, bookmarks, and snapshots |
+| `src/radar/static/` | Responsive news, repository, and bookmark views |
+| `scripts/start.sh` | Single-worker local startup |
+
 ## Run locally
 
 ```sh
@@ -10,7 +59,7 @@ python3.12 -m venv .venv
 ./scripts/start.sh
 ```
 
-Open http://127.0.0.1:8000 . No Node build or cloud deployment is required. The startup script loads source directly; it avoids an editable-install encoding issue on Chinese directory paths.
+Open [the local dashboard](http://127.0.0.1:8000). No Node build or cloud deployment is required. The startup script loads source directly; it avoids an editable-install encoding issue on Chinese directory paths.
 
 The app collects on first startup, catches up after a missed daily run, and checks for the 09:00 Asia/Shanghai run every minute while running. Keep the terminal open and the computer awake for scheduled collection. Manual refresh is also available. Only one process/worker may use the database at a time.
 
@@ -36,6 +85,20 @@ node --check src/radar/static/app.js
 ```
 
 The browser check temporarily creates and removes one bookmark; run it against a disposable/test database if personal bookmarks are present.
+
+## Verified status
+
+The initial collection implementation passed 8 backend tests and browser checks for bookmark persistence across page reloads, search, mobile layout, tab sorting, and list-error reporting. The test suite currently emits one upstream Starlette/httpx deprecation warning.
+
+The observed live run on October 28, 2026 stored 90 articles and 57 distinct repositories. Both RSS feeds and three GitHub searches succeeded; four seed repository requests were rate-limited. This was a **partial live run**, not verification that every source succeeded. These counts are a historical validation snapshot, not a promise about future feed contents.
+
+See [PROJECT_STATUS.md](PROJECT_STATUS.md) for verification boundaries and outstanding work.
+
+## Product direction
+
+The longer-term goal is an AI-native personal research assistant backed by a domestic large language model. The current milestone supplies its reusable data collection and storage foundation.
+
+Planned additions include sourced conversational answers, Chinese technical explanations, evidence-based project evaluation, and historical trend analysis. They are not available in the current dashboard. Codex and Superpowers support product development; a separately configured model provider will power the future in-product assistant.
 
 ## Development
 

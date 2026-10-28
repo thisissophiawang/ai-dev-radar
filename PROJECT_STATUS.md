@@ -1,7 +1,7 @@
 # Project Status — AI Dev Radar
 
 Updated: 2026-10-28 (Asia/Shanghai)
-Branch: `codex/dashboard-collection`
+Integrated branch: `main` (collection implementation originated on `codex/dashboard-collection`)
 
 ## Current milestone
 
