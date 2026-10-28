@@ -11,3 +11,7 @@ data/
 *.sqlite3
 *.db
 *.log
+
+*.egg-info/
+.pytest_cache/
+.superpowers/
