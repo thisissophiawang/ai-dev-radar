@@ -32,4 +32,4 @@
 - 交付时注明分支、commit / push 状态；最新提交号在交付消息或下一次状态记录中补记，避免提交哈希自引用。
 
 ## 当前状态
-已实现本地数据采集 dashboard，实际验证和剩余限制见 PROJECT_STATUS.md。AI 助手与国内模型尚未接入。
+已实现本地数据采集 dashboard 和七个 MCP 工具；已安装隔离 QwenPaw 并验证工具连接与 Skill 可用列表。真实模型问答与 Dashboard 聊天入口待验收，实际验证和剩余限制见 PROJECT_STATUS.md。

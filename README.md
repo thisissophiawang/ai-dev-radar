@@ -12,6 +12,8 @@ A local-first dashboard that collects AI engineering news and GitHub projects fo
 
 The collection workflow developed on `codex/dashboard-collection` is now integrated into `main`.
 
+On the development branch, an isolated **QwenPaw 2.2.2.post1** assistant can connect to the existing Radar database through seven MCP tools and load two research Skills. Run `sh scripts/start_assistant.sh` after the [local assistant setup](docs/assistant-setup.md), then open `http://127.0.0.1:8088/`. Runtime connectivity is verified; domestic-model conversation and embedded Dashboard chat are pending. Follow the [assistant implementation plan](docs/superpowers/plans/2026-10-29-qwenpaw-assistant.md) for the delivery sequence and acceptance criteria.
+
 ## How collection works
 
 ```text
@@ -49,6 +51,11 @@ Startup / daily schedule / manual refresh
 | `src/radar/refresh.py` | Collection orchestration, single-run coordination, and daily scheduling |
 | `src/radar/storage.py` | SQLite records, canonical URLs, bookmarks, and snapshots |
 | `src/radar/static/` | Responsive news, repository, and bookmark views |
+| `src/radar/services/` | Shared catalog queries and idempotent bookmark operations |
+| `src/radar/mcp_server.py` | Seven stdio MCP tools over the existing database |
+| `skills/` | Evidence-aware project discovery and personal library workflows |
+| `scripts/setup_qwenpaw.py` | Pinned, isolated assistant setup and actual runtime MCP checks |
+| `scripts/start_assistant.sh` | Local QwenPaw Console startup on port 8088 |
 | `scripts/start.sh` | Single-worker local startup |
 
 ## Run locally
@@ -61,7 +68,7 @@ python3.12 -m venv .venv
 
 Open [the local dashboard](http://127.0.0.1:8000). No Node build or cloud deployment is required. The startup script loads source directly; it avoids an editable-install encoding issue on Chinese directory paths.
 
-The app collects on first startup, catches up after a missed daily run, and checks for the 09:00 Asia/Shanghai run every minute while running. Keep the terminal open and the computer awake for scheduled collection. Manual refresh is also available. Only one process/worker may use the database at a time.
+The app collects on first startup, catches up after a missed daily run, and checks for the 09:00 Asia/Shanghai run every minute while running. Keep the terminal open and the computer awake for scheduled collection. Manual refresh is also available. Run only one dashboard collection worker. The separate MCP process may read and update bookmarks in the same SQLite database; it does not start a competing scheduler.
 
 ## Sources and limits
 
@@ -88,7 +95,7 @@ The browser check temporarily creates and removes one bookmark; run it against a
 
 ## Verified status
 
-The initial collection implementation passed 8 backend tests and browser checks for bookmark persistence across page reloads, search, mobile layout, tab sorting, and list-error reporting. The test suite currently emits one upstream Starlette/httpx deprecation warning.
+The current development increment passes **19 tests**, including actual MCP protocol calls, idempotent bookmark writes, and isolated QwenPaw setup and runtime reads. The suite emits one existing Starlette/httpx deprecation warning. Runtime-specific setup tests require the optional QwenPaw environment and skip when it is absent. Earlier dashboard browser checks covered bookmark persistence, search, mobile layout, tab sorting, and list-error reporting.
 
 The observed live run on October 28, 2026 stored 90 articles and 57 distinct repositories. Both RSS feeds and three GitHub searches succeeded; four seed repository requests were rate-limited. This was a **partial live run**, not verification that every source succeeded. These counts are a historical validation snapshot, not a promise about future feed contents.
 
@@ -117,12 +124,29 @@ These are human-maintained evidence records, not automatic quality certificates.
 
 ## MCP and Skills design
 
-See the [MCP Tools and Skills Architecture](docs/architecture/mcp-skills-design.md) for the proposed shared-service architecture, nine MCP tools, four business Skills, evidence stages, write safeguards, and phased acceptance plan. The shared catalog service and five read-only MCP tools are implemented; the remaining mutation tools, business Skills and domestic-model assistant are planned.
+See the [MCP Tools and Skills Architecture](docs/architecture/mcp-skills-design.md) for the proposed shared-service architecture, nine MCP tools, four business Skills, evidence stages, write safeguards, and phased acceptance plan. Seven MCP tools are implemented: five catalog/status reads and two idempotent bookmark writes. Two business Skills are available in the isolated QwenPaw workspace. Collection-start and verification-write tools, additional Skills, real-model conversation acceptance, and embedded Dashboard chat remain pending.
 
 ### Read-only MCP integration
 
-A local stdio MCP server now exposes five read tools over the same database as the dashboard: search, exact item details, verification history, configured sources, and collection status. See [local setup](docs/mcp-local-setup.md). Real SDK client tests cover protocol initialization and tool calls; QwenPaw and domestic-model conversations remain pending.
+A local stdio MCP server now exposes five read tools over the same database as the dashboard: search, exact item details, verification history, configured sources, and collection status. See [local setup](docs/mcp-local-setup.md). Real SDK client tests cover protocol initialization and tool calls. QwenPaw runtime connectivity is also verified; domestic-model conversations remain pending.
 
 ### Bookmark MCP operations
 
-The MCP server also exposes idempotent bookmark save/remove tools (seven tools total). HTTP and MCP share the bookmark service. Request replay returns the original operation result; query the item for current state. See the local setup guide for request-key semantics. The full local suite passes 14 tests; real-model assistant acceptance remains pending.
+The MCP server also exposes idempotent bookmark save/remove tools (seven tools total). HTTP and MCP share the bookmark service. Request replay returns the original operation result; query the item for current state. See the local setup guide for request-key semantics. The earlier bookmark milestone passed 14 tests; the current assistant increment passes 19 tests. Real-model assistant acceptance remains pending.
+
+## Assistant setup and next delivery steps
+
+Install and initialize the optional runtime after creating the Radar environment and database:
+
+```sh
+uv venv --python .venv/bin/python data/qwenpaw-venv
+uv pip install --python data/qwenpaw-venv/bin/python 'qwenpaw==2.2.2.post1'
+data/qwenpaw-venv/bin/python scripts/setup_qwenpaw.py --db data/radar.sqlite3
+sh scripts/start_assistant.sh
+```
+
+On this machine the isolated runtime is already installed and initialized; use only the last command to restart it. Setup refuses to overwrite an existing assistant home. Open [the local assistant](http://127.0.0.1:8088/) and use Default Agent. Configure Kimi locally in Models before conversational acceptance; the pending model selection does not establish account access or a successful model call.
+
+Delivery order: reusable data and MCP tools → isolated QwenPaw and workspace Skills → actual sourced question, follow-up and bookmark read-back → Dashboard chat adapter. The first two stages are verified. Model credentials, real conversational behavior, and the Dashboard adapter remain pending.
+
+Runtime files, package snapshots, conversations and credentials stay under Git-ignored `data/`. The repository contains setup scripts and documentation, not the installed runtime or private data. See [assistant setup and acceptance](docs/assistant-setup.md) and the [step-by-step development plan](docs/superpowers/plans/2026-10-29-qwenpaw-assistant.md).

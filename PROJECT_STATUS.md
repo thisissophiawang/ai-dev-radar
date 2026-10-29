@@ -1,14 +1,16 @@
 # Project Status — AI Dev Radar
 
-Updated: 2026-10-28 (Asia/Shanghai)
+Updated: 2026-10-29 (Asia/Shanghai)
 Current development branch: `codex/project-verification`
-Previous implementation commit: `61365bb` (pushed to origin; not merged into `main`).
-Current delivery: idempotent bookmark MCP operations and corrected personal AI research scope; commit notes are included in this delivery.
+Latest committed implementation: `11c0458` (previously pushed; local origin tracking ref matches HEAD; not merged into `main`).
+Current delivery increment: assistant preparation, isolated QwenPaw setup/launcher, two business Skills, integration notes, executable plan and tests. Commit and remote confirmation are reported in the delivery message.
 `main` contains the earlier collection dashboard baseline.
 
 ## Current milestone
 
 Local collection dashboard, project evidence tracking, and seven MCP tools (five reads, two bookmark writes) are implemented. The collection foundation is usable; the end-to-end AI assistant and feedback loop are not complete. Domestic-model chat and analysis are not implemented yet.
+
+QwenPaw 2.2.2.post1 is now installed locally in an isolated environment. Its real MCP client has queried the existing Radar database and its workspace Skill service lists both research Skills as available. Console startup is verified; actual model-backed conversation and embedded Dashboard chat remain pending.
 
 ## Implemented
 
@@ -52,8 +54,8 @@ Open http://127.0.0.1:8000 . Keep the process running and the computer awake for
 
 ## Next action — minimal end-to-end loop
 
-1. DONE locally: bookmark save/remove through shared services and MCP, with request-key replay, conflicting-payload rejection, and persisted read-back. Full suite now 14 passed.
-2. Add a minimal business workflow for project discovery, evidence-aware follow-up and saving a note. Explicitly load it in the chosen assistant runtime; a Skill file alone does not prove execution.
+1. DONE locally: bookmark save/remove through shared services and MCP, with request-key replay, conflicting-payload rejection, and persisted read-back. Current full suite: 16 passed, one existing deprecation warning.
+2. Two business workflow drafts now exist. Validate their format and behavior, then explicitly load them in the chosen assistant runtime; file creation alone does not prove execution.
 3. Connect one QwenPaw instance and one configured domestic model. Validate search → exact-item follow-up → explicit save → read-back with a real provider. Model selection, credentials and tool compatibility are prerequisites, not completed setup.
 4. In parallel with assistant acceptance, configure the application's GitHub credential and verify all sources; observe an unattended scheduled run and then multiple days. Do not equate timer tests with uninterrupted operation.
 
@@ -64,7 +66,7 @@ Acceptance scenario: ask for noteworthy AI development tools and recent AI news,
 | Loop | Current evidence | Missing for acceptance |
 | --- | --- | --- |
 | Collect → deduplicate → store → display → next scheduled collection | Implemented; historical live collection was partial; scheduler tests passed | Authenticated full-source validation, unattended and multi-day observation; service must remain running and machine awake |
-| Question → tools → sourced answer → follow-up → saved result | Five read-only MCP tools passed actual SDK protocol calls using fixture data | Write tools, workflow loading, model/runtime integration, persistent conversation and real-model acceptance |
+| Question → tools → sourced answer → follow-up → saved result | Seven MCP tools, including bookmark writes, passed SDK protocol tests; real local database read connectivity also checked | Skill validation/loading, model/runtime integration, persistent conversation and real-model acceptance |
 | Usage feedback → improved selection → next recommendation | Bookmarks, notes and evidence records exist as inputs | Explicit preference/ranking rules, feedback consumption, evaluation and demonstrated improvement |
 
 Overall: the data foundation is delivered. The user's full AI-native research assistant goal and autonomous feedback loop are not yet achieved. No automatic testing/adoption of collected repositories is implemented. Current scheduling does not install an OS background service, recover an exited process, or resolve rate limits autonomously.
@@ -126,3 +128,43 @@ Implemented on `codex/project-verification`:
 - Fresh pre-commit validation: 14 tests passed, one existing Starlette/httpx deprecation warning; whitespace/diff check passed.
 - Detailed English notes: `docs/commit-notes/2026-10-28-bookmark-mcp.md` and the commit message body.
 - Next milestone: load business Skills in a verified QwenPaw runtime and configure a domestic model for sourced multi-turn answers. No model, QwenPaw, or unattended multi-day acceptance is claimed.
+
+## Assistant preparation — October 29, 2026
+
+- User clarified there is no existing QwenPaw installation. Evaluate QwenPaw + Kimi versus WorkBuddy; do not assume credentials or a running assistant already exist.
+- Added `scripts/prepare_assistant.py`: real stdio initialization, seven-tool catalog verification, source/search read calls, and non-overwriting generic client configuration generation.
+- Added two draft business Skills for evidence-aware project discovery and library management. Neither is installed or behaviorally validated in an assistant runtime. The optional skill validator is blocked by missing PyYAML in the project environment.
+- Validation: full suite 16 passed, one existing deprecation warning. Also ran the preparation script against the actual local Radar database; seven tools and read calls passed. No model invocation, runtime install, or chat acceptance is claimed.
+- Integration notes: `docs/assistant-setup.md`. Next: pin and inspect the selected runtime, configure the chosen model locally, load Skills and perform real conversational acceptance.
+- This increment remains local and uncommitted.
+
+## Progress audit — October 29, 2026
+
+- Re-read status, integration notes and Git working tree; corrected stale top-level date, commit reference and loop table.
+- Fresh validation: `PYTHONPATH=src .venv/bin/pytest -q` → 16 passed, one existing Starlette/httpx warning. No live source refresh or model call performed in this audit.
+- Current phase: assistant integration preparation (roadmap step 2), not completed conversational assistant.
+- Immediate sequence: validate Skill drafts; inspect/pin and isolate QwenPaw installation; configure Kimi API locally when available; load Radar tools and Skills; verify three-turn sourced conversation and bookmark read-back; then integrate the verified chain into Dashboard.
+- API credentials are needed for real Kimi calls, not for local setup, tool testing or continued implementation. No purchase or configured key is assumed.
+
+## Isolated assistant runtime delivery — October 29, 2026
+
+- Installed official QwenPaw `2.2.2.post1` in `data/qwenpaw-venv`; dependency snapshot is local `data/qwenpaw-requirements.lock`. The existing Radar environment and database remain the business implementation.
+- Added `scripts/setup_qwenpaw.py`: validates inputs and pinned runtime, refuses an existing workspace, initializes version-compatible configuration, loads seven Radar tools, copies/scans/enables two research Skills through QwenPaw's Skill service, and checks actual read calls with QwenPaw's own MCP client. Configuration/test paths containing spaces pass.
+- Real setup against `data/radar.sqlite3`: seven tools discovered; source listing and item search passed; both Skills are listed as available for the default Console workspace. This is runtime integration evidence, not proof of successful model reasoning or correct Skill use during conversation.
+- Added a loopback launcher at `http://127.0.0.1:8088/`. The Console and Models page were inspected in the browser; server startup logs confirm the Radar MCP connection. The service remains running for local configuration/testing.
+- Fixed an observed upstream isolation issue: Chrome bridge bootstrap defaults to `~/.qwenpaw` despite the custom working directory. The launcher sets process-local bridge state to the project home before loading the app; upstream package files remain unmodified.
+- Explicitly selected pending `kimi-cn / kimi-k2.5` for the research agent to prevent inheritance of QwenPaw's default free router. No API key is configured, no model-backed conversation has been accepted, and account/model entitlement is unknown. Configure an actually available model in the local Models page.
+- Full verification: `PYTHONPATH=src .venv/bin/pytest -q` → **19 passed**, one existing Starlette/httpx deprecation warning. New setup tests were observed failing before implementation and passing afterward. `git diff --check` passed. Runtime logs also show upstream duplicate-plugin warnings and unsuccessful discovery of unconfigured Ollama/LM Studio; these do not establish local-model availability.
+- Development sequence and checkboxes: `docs/superpowers/plans/2026-10-29-qwenpaw-assistant.md`. Setup and runtime connection are complete; real-model three-turn acceptance and the subsequent Dashboard chat adapter remain pending.
+- Ruling: keep the existing QwenPaw-first sequence instead of building a second model orchestration stack before real behavior is verified. Keep model credentials and runtime data local. Complete all credential-independent setup now; record model acceptance as pending.
+- Delivery branch: `codex/project-verification`. This increment remains local and uncommitted; no new push or merge is claimed.
+
+
+## Assistant commit preparation — October 29, 2026
+
+- User requested committing and pushing the assistant increment with an updated English README.
+- README now documents the runtime setup/start commands, seven-tool architecture, workspace Skills, single collection-worker boundary, current 19-test evidence, and the remaining real-model/Dashboard-chat acceptance.
+- Includes both the earlier assistant preparation work and the isolated QwenPaw setup/launch implementation, tests, business Skills and executable plan.
+- Fresh pre-commit validation: `PYTHONPATH=src .venv/bin/pytest -q` → 19 passed, one existing Starlette/httpx deprecation warning. `git diff --check` passed.
+- Runtime installations, private configuration, conversations, model keys, logs and SQLite files remain excluded by Git ignore rules.
+- Delivery target: existing `codex/project-verification` branch. The current commit hash and push result are reported after execution; this delivery does not claim real-model acceptance or a merge into main.
